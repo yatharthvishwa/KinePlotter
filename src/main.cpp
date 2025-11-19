@@ -9,32 +9,38 @@ float elbow_thetha2;
 
 float px;
 float py;
-float P;
+float hypotenuse;
+float hypotenuse_angle;
 
 float rad_to_deg = 180.0/PI;
 
 float L_1 = 10.0;
 float L_2 = 10.0;
 
-void calculate_P(){
-  P = sqrt(sq(px) + sq(py));
+float inner_angle;
+float outer_angle;
+float shoulder_motor_angle;
+float elbow_motor_angle;
+
+
+void calculate_hypotenuse(){
+  hypotenuse = sqrt(sq(px) + sq(py));
+  hypotenuse_angle = asin(px / hypotenuse);
   Serial.print("P=");
-  Serial.println(P);
+  Serial.println(hypotenuse);
 }
 
-void calculate_thetha2(){
-  elbow_thetha2 = PI - acos((sq(L_1) + sq(L_2) - sq(P)) / (2 * L_1 * L_2));
-  Serial.print("ELBOW=");
-  Serial.println(elbow_thetha2 * rad_to_deg);
+void calculate_elbow_motor_angle(){
+  // elbow_thetha2 = PI - acos((sq(L_1) + sq(L_2) - sq(P)) / (2 * L_1 * L_2));
+  outer_angle = acos( sq(L_1) + sq(L_2) - sq(hypotenuse) ) / (2 * L_1 * L_2);
+  elbow_motor_angle = PI - outer_angle;
 }
 
-void calculate_thetha1(){
-  shoulder_thetha1 = atan(py / px) - acos((sq(L_1) + sq(P) - sq(L_2)) / (2 * L_1 * P));
-  Serial.print("SHOULDER=");
-  Serial.println(elbow_thetha2 * rad_to_deg);
+void calculate_shoulder_motor_angle(){
+  // shoulder_thetha1 = atan(py / px) - acos((sq(L_1) + sq(P) - sq(L_2)) / (2 * L_1 * P));
+  inner_angle = acos( sq(hypotenuse) + sq(L_1) - sq(L_2) ) / (2 * hypotenuse * L_1);
+  shoulder_motor_angle = hypotenuse_angle - inner_angle
 }
-
-
 
 void setup() {
   Serial.begin(9600);
@@ -46,7 +52,7 @@ void setup() {
 void loop() {
   if(Serial.available()>0) {
 
-    px = Serial.parseFloat();
+    px = Serial.parseFloat(); //retrieves the first valid floating point number from the Serial buffer
     Serial.print("px =");
     Serial.println(px);
 
@@ -59,15 +65,12 @@ void loop() {
                       
     }
 
-    calculate_P();
+    calculate_hypotenuse();
+    calculate_elbow_motor_angle();
+    calculate_shoulder_motor_angle();
 
-    calculate_thetha2();
-    calculate_thetha1();
-
-    SHOULDER.write(shoulder_thetha1 * rad_to_deg);
-    ELBOW.write(elbow_thetha2 * rad_to_deg);
-
-
+    SHOULDER.write(shoulder_motor_angle * rad_to_deg);
+    ELBOW.write(elbow_motor_angle * rad_to_deg);
   }
 }
 
