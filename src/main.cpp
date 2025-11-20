@@ -23,7 +23,8 @@ float elbow_motor_angle;
 
 void calculate_hypotenuse(){
   hypotenuse = sqrt(sq(px) + sq(py));
-  hypotenuse_angle = (asin(px / hypotenuse));
+  // hypotenuse_angle = (asin(px / hypotenuse));
+  hypotenuse_angle = atan2(px, py);
   Serial.println(hypotenuse);
   Serial.println(hypotenuse_angle * rad_to_deg);
 }
@@ -68,9 +69,17 @@ void loop() {
 
     calculate_hypotenuse();
 
-    SHOULDER.write(calculate_shoulder_motor_angle());
-    ELBOW.write(calculate_elbow_motor_angle());
+    float elbow_angle = abs(calculate_elbow_motor_angle());
+    float shoulder_angle = abs(90 - calculate_shoulder_motor_angle());
 
+    Serial.print("Elbow angle = ");
+    Serial.println(elbow_angle);
+
+    Serial.print("Shoulder angle = ");
+    Serial.println(shoulder_angle);
+
+    SHOULDER.write(shoulder_angle);
+    ELBOW.write(elbow_angle);
 
   }
 }
