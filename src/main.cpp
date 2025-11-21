@@ -25,20 +25,23 @@ float shoulder_angle_absolute;
 
 
 bool clampangles() {
+  // Deprecated: this version used global radian values and was called before
+  // angles were computed for the current (px,py). Use clampangles_deg instead.
+  return true;
+}
 
-  // Clamp shoulder angle
-  if (shoulder_motor_angle < 0 || shoulder_motor_angle > 180) {
-    Serial.println("ERROR: shoulder_angle out of range!");
+// Check angles in degrees (call after computing angles for the current point)
+bool clampangles_deg(float shoulder_deg, float elbow_deg) {
+  if (shoulder_deg < 0.0 || shoulder_deg > 180.0) {
+    Serial.print("ERROR: shoulder_angle out of range! ");
+    Serial.println(shoulder_deg);
     return false;
   }
-
-  // Clamp elbow angle
-  if (elbow_motor_angle < 0 || elbow_motor_angle > 180) {
-    Serial.println("ERROR: elbow_angle out of range!");
+  if (elbow_deg < 0.0 || elbow_deg > 180.0) {
+    Serial.print("ERROR: elbow_angle out of range! ");
+    Serial.println(elbow_deg);
     return false;
   }
-
-
   return true;
 }
 
@@ -46,8 +49,9 @@ bool clampangles() {
 
 void calculate_hypotenuse(){
   hypotenuse = sqrt(sq(px) + sq(py));
-  // hypotenuse_angle = (asin(px / hypotenuse));
-  hypotenuse_angle = atan2(px, py);
+  // hypotenuse_angle is the polar angle to (px,py): use atan2(y,x)
+  // (previous code used atan2(px,py) which swaps arguments and gives wrong quadrant)
+  hypotenuse_angle = atan2(py, px);
   // Serial.println(hypotenuse);
   // Serial.println(hypotenuse_angle * rad_to_deg);
 }
@@ -82,13 +86,16 @@ void drawRectangle(float x1, float y1, float x2, float y2) {
     Serial.print(" ");
     Serial.println(py);
     calculate_hypotenuse();
-
-
-    if (clampangles() == true) {
-      elbow_angle_absolute = abs(calculate_elbow_motor_angle());
-      shoulder_angle_absolute = abs(90 - calculate_shoulder_motor_angle());
-      ELBOW.write(elbow_angle_absolute);
-      SHOULDER.write(shoulder_angle_absolute );
+    // compute angles (functions return degrees)
+    {
+      float elbow_deg = calculate_elbow_motor_angle();
+      float shoulder_deg = calculate_shoulder_motor_angle();
+      if (clampangles_deg(shoulder_deg, elbow_deg)) {
+        elbow_angle_absolute = abs(elbow_deg);
+        shoulder_angle_absolute = abs(90.0 - shoulder_deg);
+        ELBOW.write(elbow_angle_absolute);
+        SHOULDER.write(shoulder_angle_absolute);
+      }
     }
     
 
@@ -101,12 +108,15 @@ void drawRectangle(float x1, float y1, float x2, float y2) {
     Serial.print(" ");
     Serial.println(y2);
     calculate_hypotenuse();
-
-    if (clampangles() == true) {
-      elbow_angle_absolute = abs(calculate_elbow_motor_angle());
-      shoulder_angle_absolute = abs(90 - calculate_shoulder_motor_angle());
-      ELBOW.write(elbow_angle_absolute);
-      SHOULDER.write(shoulder_angle_absolute );
+    {
+      float elbow_deg = calculate_elbow_motor_angle();
+      float shoulder_deg = calculate_shoulder_motor_angle();
+      if (clampangles_deg(shoulder_deg, elbow_deg)) {
+        elbow_angle_absolute = abs(elbow_deg);
+        shoulder_angle_absolute = abs(90.0 - shoulder_deg);
+        ELBOW.write(elbow_angle_absolute);
+        SHOULDER.write(shoulder_angle_absolute);
+      }
     }
     
     delay(100);
@@ -118,13 +128,16 @@ void drawRectangle(float x1, float y1, float x2, float y2) {
     Serial.print(" ");
     Serial.println(py);
     calculate_hypotenuse();
-
-    if (clampangles() == true) {
-      elbow_angle_absolute = abs(calculate_elbow_motor_angle());
-      shoulder_angle_absolute = abs(90 - calculate_shoulder_motor_angle());
-      ELBOW.write(elbow_angle_absolute);
-      SHOULDER.write(shoulder_angle_absolute );
-    }
+      {
+        float elbow_deg = calculate_elbow_motor_angle();
+        float shoulder_deg = calculate_shoulder_motor_angle();
+        if (clampangles_deg(shoulder_deg, elbow_deg)) {
+          elbow_angle_absolute = abs(elbow_deg);
+          shoulder_angle_absolute = abs(90.0 - shoulder_deg);
+          ELBOW.write(elbow_angle_absolute);
+          SHOULDER.write(shoulder_angle_absolute);
+        }
+      }
 
     delay(100);
   }
@@ -135,13 +148,16 @@ void drawRectangle(float x1, float y1, float x2, float y2) {
     Serial.print(" ");
     Serial.println(y1);
     calculate_hypotenuse();
-    
-    if (clampangles() == true) {
-      elbow_angle_absolute = abs(calculate_elbow_motor_angle());
-      shoulder_angle_absolute = abs(90 - calculate_shoulder_motor_angle());
-      ELBOW.write(elbow_angle_absolute);
-      SHOULDER.write(shoulder_angle_absolute );
-    }
+      {
+        float elbow_deg = calculate_elbow_motor_angle();
+        float shoulder_deg = calculate_shoulder_motor_angle();
+        if (clampangles_deg(shoulder_deg, elbow_deg)) {
+          elbow_angle_absolute = abs(elbow_deg);
+          shoulder_angle_absolute = abs(90.0 - shoulder_deg);
+          ELBOW.write(elbow_angle_absolute);
+          SHOULDER.write(shoulder_angle_absolute);
+        }
+      }
     
     delay(100);
   }
@@ -156,12 +172,15 @@ void draw_circle(float center_x, float center_y, float radius) {
     Serial.print(" ");
     Serial.println(py);
     calculate_hypotenuse();
-
-    if (clampangles() == true) {
-      elbow_angle_absolute = abs(calculate_elbow_motor_angle());
-      shoulder_angle_absolute = abs(90 - calculate_shoulder_motor_angle());
-      ELBOW.write(elbow_angle_absolute);
-      SHOULDER.write(shoulder_angle_absolute );
+    {
+      float elbow_deg = calculate_elbow_motor_angle();
+      float shoulder_deg = calculate_shoulder_motor_angle();
+      if (clampangles_deg(shoulder_deg, elbow_deg)) {
+        elbow_angle_absolute = abs(elbow_deg);
+        shoulder_angle_absolute = abs(90.0 - shoulder_deg);
+        ELBOW.write(elbow_angle_absolute);
+        SHOULDER.write(shoulder_angle_absolute);
+      }
     }
 
     delay(100);
@@ -195,13 +214,15 @@ void loop() {
     // draw_circle(0,0,10);
 
     calculate_hypotenuse();
-
-
-    if (clampangles() == true) {
-      elbow_angle_absolute = abs(calculate_elbow_motor_angle());
-      shoulder_angle_absolute = abs(90 - calculate_shoulder_motor_angle());
-      ELBOW.write(elbow_angle_absolute);
-      SHOULDER.write(shoulder_angle_absolute );
+    {
+      float elbow_deg = calculate_elbow_motor_angle();
+      float shoulder_deg = calculate_shoulder_motor_angle();
+      if (clampangles_deg(shoulder_deg, elbow_deg)) {
+        elbow_angle_absolute = abs(elbow_deg);
+        shoulder_angle_absolute = abs(90.0 - shoulder_deg);
+        ELBOW.write(elbow_angle_absolute);
+        SHOULDER.write(shoulder_angle_absolute);
+      }
     }
     Serial.print("Elbow angle = ");
     Serial.println(elbow_angle_absolute);
