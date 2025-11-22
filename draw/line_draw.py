@@ -1,16 +1,17 @@
 from PIL import Image, ImageFilter
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+import serial   # enable when sending to Arduino
 
 # -------------------------------
 # SETTINGS
 # -------------------------------
 
-# rectangle limits for final scaled points
 X_MIN, X_MAX = 2, 16
-Y_MIN, Y_MAX = -4, 10
+Y_MIN, Y_MAX = 0, 10
 
-IMAGE_PATH = r"D:\UNOQ\Inverse kinematics 2DOF\sololevel.jpeg"
+IMAGE_PATH = r"D:\UNOQ\Inverse kinematics 2DOF\sololevel.png"
 EDGE_THRESHOLD = 50
 
 
@@ -36,12 +37,9 @@ ys = np.array([p[1] for p in coords], dtype=float)
 
 img_w = xs.max() - xs.min()
 img_h = ys.max() - ys.min()
-
-# Avoid division by zero
 if img_w == 0: img_w = 1
 if img_h == 0: img_h = 1
 
-# shift all to start at (0,0)
 xs_norm = (xs - xs.min()) / img_w
 ys_norm = (ys - ys.min()) / img_h
 
@@ -53,43 +51,83 @@ ys_norm = (ys - ys.min()) / img_h
 xs_scaled = xs_norm * (X_MAX - X_MIN) + X_MIN
 ys_scaled = ys_norm * (Y_MAX - Y_MIN) + Y_MIN
 
-scaled_coords = list(zip(xs_scaled, ys_scaled))
-scaled = [(float(x), float(y)) for x, y in scaled_coords]
+scaled = list(zip(xs_scaled, ys_scaled))
+
+# downsample BEFORE nearest neighbor – FAST!
+DOWNSAMPLE_FACTOR = 15
+scaled = scaled[::DOWNSAMPLE_FACTOR]
 
 
 
 # -------------------------------
-# 4. Plot the scaled path
+# 4. PATH FINDING (Nearest Neighbor)
 # -------------------------------
+
+pts = np.array(scaled, dtype=float)
+n = len(pts)
+
+visited = np.zeros(n, dtype=bool)
+path = []
+
+idx = 0  # start at first point
+for _ in range(n):
+    visited[idx] = True
+    path.append(tuple(pts[idx]))
+
+    # distances to all points
+    d = np.linalg.norm(pts - pts[idx], axis=1)
+    d[visited] = 1e12  # ignore visited nodes
+
+    idx = np.argmin(d)
+
+coords_path = path  # final ordered drawing path
+
+
+
+
+# -------------------------------
+# 5. Plot final path
+# -------------------------------
+
+px = [p[0] for p in coords_path]
+py = [p[1] for p in coords_path]
 
 plt.figure(figsize=(6,6))
-plt.scatter(xs_scaled, ys_scaled, s=1)
-
-plt.title("Scaled Coordinates in Rectangle (2,-4) to (16,10)")
+plt.plot(px, py, linewidth=0.5)
+plt.scatter(px, py, s=1)
+plt.title("Final Path (Nearest Neighbor Drawing)")
 plt.axis('equal')
 plt.show()
 
 
-# -------------------------------
-# 5. Print some values for checking
-# -------------------------------
 
-print("Total points:", len(scaled))
-print("Example points:", print(scaled))
+#send to Arduino
 
+# coords_path is already built earlier in the script
+def get_coords_path():
+    """Return the ordered path as a list of (x,y) float tuples."""
+    return coords_path
 
-import serial
-import time
+def send_to_arduino(coords_path, port="COM3", baud=115200, delay=0.01):
+    """Send coords to Arduino over serial and return after done."""
+    import serial, time
+    with serial.Serial(port, baud, timeout=1) as ser:
+        time.sleep(2)  # allow Arduino to reset
+        for (x, y) in coords_path:
+            message = f"{x:.2f},{y:.2f}\\n"
+            ser.write(message.encode())
+            # Optionally read immediate response (non-blocking)
+            time.sleep(delay)
 
-# open serial
-ser = serial.Serial("COM3", 115200)   # <= change COM port
-time.sleep(2)  # wait for Arduino reset
+if __name__ == "__main__":
+    
+    px = [p[0] for p in coords_path]
+    py = [p[1] for p in coords_path]
+    plt.figure(figsize=(6,6))
+    plt.plot(px, py, linewidth=0.5)
+    plt.scatter(px, py, s=1)
+    plt.title("Final Path (Nearest Neighbor Drawing)")
+    plt.axis('equal')
+    plt.show()
 
-coords = scaled  # use the scaled coordinates
-
-for (x, y) in coords:
-    message = f"{x},{y}\n"
-    ser.write(message.encode())
-    print(message)
-    time.sleep(0.01)
-
+    

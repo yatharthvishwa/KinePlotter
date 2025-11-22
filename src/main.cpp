@@ -206,11 +206,21 @@ void loop() {
       Serial.println(py);
 
       calculate_hypotenuse();
-      if(clampangles() == true) {
-        elbow_angle_absolute = abs(calculate_elbow_motor_angle());
-        shoulder_angle_absolute = abs(90 - calculate_shoulder_motor_angle());
-        ELBOW.write(elbow_angle_absolute);
-        SHOULDER.write(shoulder_angle_absolute );
+      // compute angles for this point (functions should return degrees)
+      float elbow_deg = abs(calculate_elbow_motor_angle());
+      float shoulder_deg = abs(calculate_shoulder_motor_angle());
+
+      Serial.print("computed elbow_deg = "); Serial.println(elbow_deg);
+      Serial.print("computed shoulder_deg = "); Serial.println(shoulder_deg);
+
+      // check ranges on the newly computed angles, then write
+      if (shoulder_deg >= 0.0 && shoulder_deg <= 180.0 && elbow_deg >= 0.0 && elbow_deg <= 180.0) {
+        elbow_angle_absolute = fabs(elbow_deg);
+        shoulder_angle_absolute = fabs(90.0 - shoulder_deg); // keep your mapping if needed
+        ELBOW.write((int)round(elbow_angle_absolute));
+        SHOULDER.write((int)round(shoulder_angle_absolute));
+      } else {
+        Serial.println("Angles out of range for current point, skipping write");
       }
     }
 
